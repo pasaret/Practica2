@@ -1,0 +1,129 @@
+---
+title: "Práctica 2"
+author: "Juan Pasaret y David Reyes"
+
+date: "2023-06-01"
+output:
+  html_document:
+    toc: yes
+    number_sections: yes
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rminer)
+library(pROC)
+```
+
+# Descripción del dataset
+
+El dataset seleccionado para la práctica se denomina [**Heart Attack Analysis & Prediction Dataset**](https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset)**.**
+
+Es un conjunto de datos de análisis y predición de ataques cardiados. Está diseñado para la práctica de análisis estadístico, ya que el número de muestras es muy pequeño. Y el objetivo es predecir las posibilidades de sufrir un ataque al corazón, teniendo en cuenta los datos proporcionado por el mismo.
+
+El conjunto está formado por dos ficheros que contienen las siguientes variables.
+
+-   **Age**: Edad del paciente
+
+-   **Sex** : Sexo del paciente
+
+-   **exang**: angina inducida por el ejercicio (1 = sí; 0 = no)
+
+-   **ca**: número de buques principales (0-3)
+
+-   **cp** : Tipo de dolor torácico
+
+    -   Valor 1: typical angina (angina típica)
+
+    -   Valor 2: atypical angina (angina atípica)
+
+    -   Valor 3: no-anginal pain (dolor no anginoso)
+
+    -   Valor 4: asymptomatic (asintomático)
+
+-   **trtbps**: presión arterial en reposo (en mm Hg)
+
+-   **chol**: colesterol en mg/dl obtenido a través del sensor BMI
+
+-   **fbs**: (azúcar en sangre en ayunas \> 120 mg/dl) (1 = verdadero; 0 = falso)
+
+-   **rest_ecg** : resultados electrocardiográficos en reposo
+
+    -   Valor 0: normal
+
+    -   Valor 1: tener anomalías en la onda ST-T (inversiones de la onda T y/o elevación o depresión del ST \> 0,05 mV)
+
+    -   Valor 2: mostrar hipertrofia ventricular izquierda probable o definitiva según los criterios de Estes
+
+-   **thalach**: frecuencia cardíaca máxima alcanzada
+
+-   **target**:
+
+    -   0= menos posibilidades de ataque al corazón
+
+    -   1= más posibilidades de ataque al corazón
+
+# Integración y selección de los datos de interés a analizar
+
+```{r}
+# carga de datos
+heart <- read.csv(file = 'heart.csv')
+
+```
+
+lklk
+
+```{r}
+#formateo de variables categoricas"
+#https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset/discussion/329925
+
+#Se desconoce cómo está codificado la variable sexo
+heart$sex<-as.factor(heart$sex)
+
+heart$exng<-as.factor(heart$exng)
+levels(heart$exng)<-c("No","Yes")
+
+heart$cp<-as.factor(heart$cp)
+levels(heart$cp)<-c("Tipical angina","Atypical angina","Non-anginal pain","Asymptomatic")
+
+heart$fbs<-as.factor(heart$fbs)
+levels(heart$fbs)<-c("False","True")
+
+heart$restecg<-as.factor(heart$restecg)
+levels(heart$restecg)<-c("Normal","ST-T wave abnormality","Left ventricular hypertrophy")
+
+heart$slp<-as.factor(heart$slp)
+levels(heart$slp)<-c("unsloping","flat","downsloping")
+
+heart$thall<-as.factor(heart$thall)
+levels(heart$thall)<-c("null","fixed defect","normal","reversable defect")
+
+#Output es la variable que vamos a utilizar para comparar si nuestro modelo opina lo mismo
+heart$output<-as.factor(heart$output)
+levels(heart$output)<-c("Less chance","More chance")
+
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+require(ggplot2)
+if (!require('GGally')) install.packages('GGally')
+library(GGally)
+
+ggpairs(heart, columns = 1:14)
+
+ggpairs(heart, columns = 1:14, aes(color = output, alpha = 0.5))
+```
+
+# Limpieza de datos
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
