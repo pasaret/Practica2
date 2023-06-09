@@ -69,13 +69,33 @@ El conjunto está formado por dos ficheros que contienen las siguientes variable
 
 # Integración y selección de los datos de interés a analizar
 
+## Análisis exploratorio
+
+El primer paso para realizar un análisis exploratorio es cargar el fichero de datos.
+
 ```{r}
 # carga de datos
 heart <- read.csv(file = 'heart.csv')
 
 ```
 
-lklk
+### Exploración del conjunto de datos
+
+Verificamos la estructura del juego de datos principal. Vemos el número de columnas que tenemos y ejemplos de los contenidos de las filas.
+
+```{r}
+structure = str(heart)
+```
+
+Vemos que tenemos **14** variables y **303**registros.
+
+A continuación vemos una muestra:
+
+```{r}
+head(heart, 10)
+```
+
+Comprobamos que hay una serie de variables categóricas, las cuales vamos a factorizar. Y el resto de variables contínuas vamos a cambiar el tipo a numéricas.
 
 ```{r}
 #formateo de variables categoricas"
