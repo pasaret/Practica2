@@ -14,9 +14,12 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r warning = FALSE, message = FALSE}
+```{r message=FALSE, warning=FALSE}
 library(rminer)
 library(pROC)
+require(ggplot2)
+if (!require('GGally')) install.packages('GGally')
+library(GGally)
 ```
 
 # Descripción del dataset
@@ -97,7 +100,7 @@ head(heart, 10)
 
 La descripción de las variables ha sido realizada por la autora en [la documentación de kaggle](#https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset/discussion/329925)
 
-Factorización de variables categóricas. La variable ¨sex¨ se desconoce cómo está codificada:
+Vamos a factorizar las variables categóricas. La variable ¨sex¨ se desconoce cómo está codificada, y las numéricas no categóricas vamos a transformarlas en variables numéricas:
 
 ```{r}
 heart$sex<-as.factor(heart$sex)
@@ -119,6 +122,10 @@ levels(heart$slp)<-c("unsloping","flat","downsloping")
 
 heart$thall<-as.factor(heart$thall)
 levels(heart$thall)<-c("null","fixed defect","normal","reversable defect")
+
+heart$trtbps<-as.numeric(heart$trtbps)
+heart$chol<-as.numeric(heart$chol)
+heart$thalachh<-as.numeric(heart$thalachh)
 ```
 
 Se factoriza igualmente la variable output, que se utilizará para evaluar la precisión de nuestro modelo:
@@ -130,21 +137,18 @@ levels(heart$output)<-c("Less chance","More chance")
 
 ```
 
-https://www.analyticsvidhya.com/blog/2021/05/classification-algorithms-in-python-heart-attack-prediction-and-analysis/
+<https://www.analyticsvidhya.com/blog/2021/05/classification-algorithms-in-python-heart-attack-prediction-and-analysis/>
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
-require(ggplot2)
-if (!require('GGally')) install.packages('GGally')
-library(GGally)
+Comprobamos los nuevos tipos de datos de las variables
 
-ggpairs(heart, columns = 1:14)
-
-ggpairs(heart, columns = 1:14, aes(color = output, alpha = 0.5))
+```{r}
+str(heart)
 ```
 
 # Limpieza de datos
 
 ## 
+
 Se comprueba que no hay ninguna columna vacía
 
 ```{r}
@@ -152,10 +156,13 @@ print(sum(is.na(heart)))
 ```
 
 Se observa que hay duplicado:
+
 ```{r}
 sum(duplicated(heart))
 ```
+
 Se quita el duplicado:
+
 ```{r}
 heart<-heart[!duplicated(heart),]
 ```
@@ -166,6 +173,11 @@ Se identifican valores extremos en variables númericas
 
 ```{r}
 numericas<-c("age","trtbps","chol","thalachh","oldpeak")
+
+ggpairs(heart,               # Data frame
+        columns = numericas, # Columnas
+        aes(color = output,  # Color por grupo (var. categórica)
+            alpha = 0.5))    # Transparencia
 
 for (columnName in numericas) {
   meanColumn<-mean(heart[[columnName]])
@@ -185,8 +197,8 @@ for (columnName in numericas) {
 
 ```
 
-
 # Creción de conjunto training y test
+
 ```{r}
 set.seed(9)
 h<-holdout(heart$output,ratio=0.8)
@@ -194,8 +206,8 @@ heartTraining<-heart[h$tr,]
 heartTest<-heart[h$ts,]
 ```
 
-
 # Construcción de modelo
+
 ```{r}
 Modelo=glm(formula=output~sex+age,
            data=heartTraining,
@@ -203,6 +215,7 @@ Modelo=glm(formula=output~sex+age,
 
 summary(Modelo)
 ```
+
 # Evaluación del modelo
 
 ```{r}
@@ -214,6 +227,7 @@ output_predicted <- ifelse(output_predicted > 0.8,1,0)
 matrix_confusion<-table(output_predicted,heartTest$output)
 matrix_confusion
 ```
+
 # Evaluación de la potencia
 
 ```{r}
@@ -221,4 +235,3 @@ test_roc = roc(heartTest$output~output_predicted, plot = TRUE, print.auc = TRUE)
 
 auc(test_roc)
 ```
-
