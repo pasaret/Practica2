@@ -14,7 +14,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r warning = FALSE, message = FALSE}
 library(rminer)
 library(pROC)
 ```
@@ -95,13 +95,11 @@ A continuación vemos una muestra:
 head(heart, 10)
 ```
 
-Comprobamos que hay una serie de variables categóricas, las cuales vamos a factorizar. Y el resto de variables contínuas vamos a cambiar el tipo a numéricas.
+La descripción de las variables ha sido realizada por la autora en [la documentación de kaggle](#https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset/discussion/329925)
+
+Factorización de variables categóricas. La variable ¨sex¨ se desconoce cómo está codificada:
 
 ```{r}
-#formateo de variables categoricas"
-#https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset/discussion/329925
-
-#Se desconoce cómo está codificado la variable sexo
 heart$sex<-as.factor(heart$sex)
 
 heart$exng<-as.factor(heart$exng)
@@ -121,12 +119,18 @@ levels(heart$slp)<-c("unsloping","flat","downsloping")
 
 heart$thall<-as.factor(heart$thall)
 levels(heart$thall)<-c("null","fixed defect","normal","reversable defect")
+```
 
-#Output es la variable que vamos a utilizar para comparar si nuestro modelo opina lo mismo
+Se factoriza igualmente la variable output, que se utilizará para evaluar la precisión de nuestro modelo:
+
+```{r}
+#Output es la variable que vamos a utilizar para comparar si nuestro
 heart$output<-as.factor(heart$output)
 levels(heart$output)<-c("Less chance","More chance")
 
 ```
+
+https://www.analyticsvidhya.com/blog/2021/05/classification-algorithms-in-python-heart-attack-prediction-and-analysis/
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 require(ggplot2)
@@ -140,10 +144,81 @@ ggpairs(heart, columns = 1:14, aes(color = output, alpha = 0.5))
 
 # Limpieza de datos
 
-You can also embed plots, for example:
+## 
+Se comprueba que no hay ninguna columna vacía
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+print(sum(is.na(heart)))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Se observa que hay duplicado:
+```{r}
+sum(duplicated(heart))
+```
+Se quita el duplicado:
+```{r}
+heart<-heart[!duplicated(heart),]
+```
+
+# Identificación y gestión de valores extremos
+
+Se identifican valores extremos en variables númericas
+
+```{r}
+numericas<-c("age","trtbps","chol","thalachh","oldpeak")
+
+for (columnName in numericas) {
+  meanColumn<-mean(heart[[columnName]])
+  sdColumn<-sd(heart[[columnName]])
+  lower<-meanColumn-sdColumn*2.5
+  higher<-meanColumn+sdColumn*2.5
+  outliers_lower<-length(which(heart[[columnName]]<lower))
+  outliers_higher<-length(which(heart[[columnName]]>higher))
+  if (outliers_higher | outliers_higher){
+    cat("Outliers detectados en",
+        columnName,
+        ": ",
+        sum(outliers_lower,outliers_higher),"\n")
+  }
+}
+
+
+```
+
+
+# Creción de conjunto training y test
+```{r}
+set.seed(9)
+h<-holdout(heart$output,ratio=0.8)
+heartTraining<-heart[h$tr,]
+heartTest<-heart[h$ts,]
+```
+
+
+# Construcción de modelo
+```{r}
+Modelo=glm(formula=output~sex+age,
+           data=heartTraining,
+           family=binomial)
+
+summary(Modelo)
+```
+# Evaluación del modelo
+
+```{r}
+output_predicted <- predict(Modelo,newdata=heartTest,type='response')
+
+#Se asume que la predicción del modelo es 1 si el modelo de regresión logística es 0.8 o mayor.
+output_predicted <- ifelse(output_predicted > 0.8,1,0)
+
+matrix_confusion<-table(output_predicted,heartTest$output)
+matrix_confusion
+```
+# Evaluación de la potencia
+
+```{r}
+test_roc = roc(heartTest$output~output_predicted, plot = TRUE, print.auc = TRUE)
+
+auc(test_roc)
+```
+

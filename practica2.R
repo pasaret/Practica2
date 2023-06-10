@@ -93,10 +93,6 @@ Modelo=glm(formula=output~sex+cp+trtbps+thalachh+exng+oldpeak+caa,
 
 summary(Modelo)$coefficients
 
-
-
-
-
 #---------4.2 Comprobación de la normalidad y homogeneidad de la varianza
 
 #---------4.3 Aplicación de pruebas estadísticas para comparar los grupos de datos.
