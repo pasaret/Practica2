@@ -17,6 +17,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r message=FALSE, warning=FALSE}
 library(rminer)
 library(pROC)
+library(corrplot)
+library(RColorBrewer)
 require(ggplot2)
 if (!require('GGally')) install.packages('GGally')
 library(GGally)
@@ -79,7 +81,6 @@ El primer paso para realizar un análisis exploratorio es cargar el fichero de d
 ```{r}
 # carga de datos
 heart <- read.csv(file = 'heart.csv')
-
 ```
 
 ### Exploración del conjunto de datos
@@ -100,9 +101,10 @@ head(heart, 10)
 
 La descripción de las variables ha sido realizada por la autora en [la documentación de kaggle](#https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset/discussion/329925)
 
-Vamos a factorizar las variables categóricas. La variable ¨sex¨ se desconoce cómo está codificada, y las numéricas no categóricas vamos a transformarlas en variables numéricas:
+Vamos a factorizar las variables categóricas. La variable ¨sex¨ se desconoce cómo está codificada, y las numéricas no categóricas vamos a transformarlas en variables numéricas. Se factoriza igualmente la variable output, que se utilizará para evaluar la precisión de nuestro modelo:
 
 ```{r}
+heart.original<-heart
 heart$sex<-as.factor(heart$sex)
 
 heart$exng<-as.factor(heart$exng)
@@ -126,11 +128,7 @@ levels(heart$thall)<-c("null","fixed defect","normal","reversable defect")
 heart$trtbps<-as.numeric(heart$trtbps)
 heart$chol<-as.numeric(heart$chol)
 heart$thalachh<-as.numeric(heart$thalachh)
-```
 
-Se factoriza igualmente la variable output, que se utilizará para evaluar la precisión de nuestro modelo:
-
-```{r}
 #Output es la variable que vamos a utilizar para comparar si nuestro
 heart$output<-as.factor(heart$output)
 levels(heart$output)<-c("Less chance","More chance")
@@ -166,12 +164,12 @@ heart<-heart[!duplicated(heart),]
 
 # Identificación y gestión de valores extremos
 
-Se identifican valores extremos en las siguientes variables numéricas:
--   **trtbps** : filas 9, 102, 111, 204, 224, 242, 249, 261, 267 
--   **chol** : filas 29, 86, 97, 221, 247 
--   **oldpeak** : filas 102, 205, 222, 251, 292
+Se identifican valores extremos en las siguientes variables numéricas:  
+-   **trtbps** : filas 9, 102, 111, 204, 224, 242, 249, 261, 267  
+-   **chol** : filas 29, 86, 97, 221, 247  
+-   **oldpeak** : filas 102, 205, 222, 251, 292  
 
-```{r}
+```{r,echo=FALSE}
 #Creo que este gráfico no tiene sentido en este apartado
 
 #ggpairs(heart,               # Data frame
@@ -180,12 +178,8 @@ Se identifican valores extremos en las siguientes variables numéricas:
 #            alpha = 0.5))    # Transparencia
 ```
 
-Se decide quitar las observaciones extremas del dataset. Ejemplo con la variable **trtbps**:
 ```{r,echo=FALSE}
-boxplot(heart$trtbps,main="Columna boxplot anterior a la limpieza")
-```
-
-```{r,echo=FALSE}
+heart.old<-heart
 numericas<-c("age","trtbps","chol","thalachh","oldpeak")
 
 rows2Delete<-c()
@@ -210,12 +204,18 @@ heart<-heart[-rows2Delete,]
 
 ```
 
+Se decide quitar las observaciones extremas del dataset. Ejemplo con la variable **trtbps**:
+
 ```{r,echo=FALSE}
-boxplot(heart$trtbps,main="Columna boxplot posterior a la limpieza")
+par(mfrow=c(1,2))
+boxplot(heart.old$trtbps,main="Con outliers")
+boxplot(heart$trtbps,main="Sin outliers")
 ```
 
 
 # Creción de conjunto training y test
+
+Se decide utilizar separar el conjunto original en un 80% para training y un 20% para test.
 
 ```{r}
 set.seed(9)
@@ -226,15 +226,51 @@ heartTest<-heart[h$ts,]
 
 # Construcción de modelo
 
+## Identificación de correlación
+
+```{r, echo=FALSE}
+cor.mtest <- function(mat, ...) {
+    mat <- as.matrix(mat)
+    n <- ncol(mat)
+    p.mat<- matrix(NA, n, n)
+    diag(p.mat) <- 0
+    for (i in 1:(n - 1)) {
+        for (j in (i + 1):n) {
+            tmp <- cor.test(mat[, i], mat[, j], ...)
+            p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+        }
+    }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+# matrix of the p-value of the correlation
+p.mat <- cor.mtest(heart.original)
+```
+
+Se observa que las variables **chol, trtbps y fbs** no están significativamente relacionadas con output.
+```{r, echo=FALSE}
+M<-cor(heart.original)
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(M, method="color", col=col(200),  
+         type="upper", order="hclust", 
+         addCoef.col = "black", # Add coefficient of correlation
+         tl.col="black", tl.srt=45, #Text label color and rotation
+         # Combine with significance
+         p.mat = p.mat, sig.level = 0.01, insig = "blank", 
+         # hide correlation coefficient on the principal diagonal
+         diag=FALSE 
+         )
+```
+
 ```{r}
-Modelo=glm(formula=output~sex+age,
+Modelo=glm(formula=output~sex+age+cp+thalachh+exng+oldpeak+slp+caa+thall,
            data=heartTraining,
            family=binomial)
 
 summary(Modelo)
 ```
 
-# Evaluación del modelo
+## Evaluación del modelo
 
 ```{r}
 output_predicted <- predict(Modelo,newdata=heartTest,type='response')
@@ -246,10 +282,12 @@ matrix_confusion<-table(output_predicted,heartTest$output)
 matrix_confusion
 ```
 
-# Evaluación de la potencia
+## Evaluación de la potencia
 
 ```{r}
 test_roc = roc(heartTest$output~output_predicted, plot = TRUE, print.auc = TRUE)
 
 auc(test_roc)
 ```
+
+# Resolución del problema
