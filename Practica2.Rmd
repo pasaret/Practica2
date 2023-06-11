@@ -157,41 +157,33 @@ print(sum(is.na(heart)))
 
 ## Duplicados
 
-Se observa que hay duplicado:
+Se observa que hay 1 duplicado, que se decide quitar del dataset.
 
 ```{r}
 sum(duplicated(heart))
-```
-
-Se quita el duplicado:
-
-```{r}
 heart<-heart[!duplicated(heart),]
 ```
 
 # Identificación y gestión de valores extremos
 
-Se identifican valores extremos en variables númericas
+Se identifican valores extremos en las siguientes variables numéricas:
+-   **trtbps** : filas 9, 102, 111, 204, 224, 242, 249, 261, 267 
+-   **chol** : filas 29, 86, 97, 221, 247 
+-   **oldpeak** : filas 102, 205, 222, 251, 292
 
 ```{r}
+#Creo que este gráfico no tiene sentido en este apartado
+
 #ggpairs(heart,               # Data frame
 #        columns = numericas, # Columnas
 #        aes(color = output,  # Color por grupo (var. categórica)
 #            alpha = 0.5))    # Transparencia
 ```
 
-Se detectan outliers las columnas:
--   **trtbps** : filas 9, 102, 111, 204, 224, 242, 249, 261, 267 
--   **chol** : filas 29, 86, 97, 221, 247 
--   **oldpeak** : filas 102, 205, 222, 251, 292
-
-Se decide quitarlos. Ejemplo de limpieza de outliers:
+Se decide quitar las observaciones extremas del dataset. Ejemplo con la variable **trtbps**:
 ```{r,echo=FALSE}
 boxplot(heart$trtbps,main="Columna boxplot anterior a la limpieza")
 ```
-
-
-
 
 ```{r,echo=FALSE}
 numericas<-c("age","trtbps","chol","thalachh","oldpeak")
@@ -202,12 +194,6 @@ for (columnName in numericas) {
   q1<-quantile(heart[[columnName]],0.25)
   q3<-quantile(heart[[columnName]],0.75)
   iqr<-q3-q1
-  
-  #meanColumn<-mean(heart[[columnName]])
-  #sdColumn<-sd(heart[[columnName]])
-  
-  #lower<-meanColumn-sdColumn*2.5
-  #higher<-meanColumn+sdColumn*2.5
 
   lower<-q1-iqr*1.5
   higher<-q3+iqr*1.5  
@@ -215,10 +201,6 @@ for (columnName in numericas) {
   outliers_lower<-which(heart[[columnName]]<lower)
   outliers_higher<-which(heart[[columnName]]>higher)
   if (length(outliers_higher) | length(outliers_higher)){
-    #cat("Outliers detectados en",
-    #    columnName,
-    #    " Filas: ",
-    #    outliers_lower,outliers_higher,"\n")
     rows2Delete<-append(rows2Delete,outliers_lower)
     rows2Delete<-append(rows2Delete,outliers_higher)
   }
