@@ -38,7 +38,7 @@ El conjunto está formado por dos ficheros que contienen las siguientes variable
 
 -   **exang**: angina inducida por el ejercicio (1 = sí; 0 = no)
 
--   **ca**: número de buques principales (0-3)
+-   **ca**: número de vasos principales (0-3)
 
 -   **cp** : Tipo de dolor torácico
 
@@ -66,7 +66,7 @@ El conjunto está formado por dos ficheros que contienen las siguientes variable
 
 -   **thalach**: frecuencia cardíaca máxima alcanzada
 
--   **target**:
+-   **output**:
 
     -   0= menos posibilidades de ataque al corazón
 
@@ -164,10 +164,10 @@ heart<-heart[!duplicated(heart),]
 
 # Identificación y gestión de valores extremos
 
-Se identifican valores extremos en las siguientes variables numéricas:  
--   **trtbps** : filas 9, 102, 111, 204, 224, 242, 249, 261, 267  
--   **chol** : filas 29, 86, 97, 221, 247  
--   **oldpeak** : filas 102, 205, 222, 251, 292  
+Se identifican valores extremos en las siguientes variables numéricas:\
+- **trtbps** : filas 9, 102, 111, 204, 224, 242, 249, 261, 267\
+- **chol** : filas 29, 86, 97, 221, 247\
+- **oldpeak** : filas 102, 205, 222, 251, 292
 
 ```{r,echo=FALSE}
 #Creo que este gráfico no tiene sentido en este apartado
@@ -212,6 +212,58 @@ boxplot(heart.old$trtbps,main="Con outliers")
 boxplot(heart$trtbps,main="Sin outliers")
 ```
 
+# Normalización de datos
+
+------------------------------------------------------------------------
+
+## Revisión de datos normalizados
+
+Para revisar si las variables pueden ser candidatas a la normalización miramos las graficas de quantile-quantile plot y el histograma.
+
+```{r ,eval=TRUE,echo=TRUE}
+par(mfrow=c(2,2))
+for(i in 1:ncol(heart)) {
+  if (is.numeric(heart[,i])){
+    qqnorm(heart[,i],main = paste("Normal Q-Q Plot for ",colnames(heart)[i]))
+    qqline(heart[,i],col="red")
+    hist(heart[,i], 
+      main=paste("Histogram for ", colnames(heart)[i]), 
+      xlab=colnames(heart)[i], freq = FALSE)
+  }
+}
+```
+
+Los resultados del quantile-quantile plot nos indica que las variables pueden ser candidatas a la normalización si es necesario.
+
+Para revisar si las variables estan normalizadas se aplica el test de Shapiro Wilk en cada variables numérica.
+
+```{r ,eval=TRUE,echo=TRUE}
+shapiro.test(heart$age)
+```
+
+```{r ,eval=TRUE,echo=TRUE}
+shapiro.test(heart$trtbps)
+```
+
+```{r ,eval=TRUE,echo=TRUE}
+shapiro.test(heart$chol)
+```
+
+```{r ,eval=TRUE,echo=TRUE}
+shapiro.test(heart$thalachh)
+```
+
+```{r ,eval=TRUE,echo=TRUE}
+shapiro.test(heart$oldpeak)
+```
+
+```{r ,eval=TRUE,echo=TRUE}
+shapiro.test(heart$caa)
+```
+
+El test nos indica que sólo la variable **chol** esta normalizada, ya que para el resto de variables el p-valor es inferior al coeficiente 0.05, por lo que se puede rechazar la hipotesis nula y entender que no es normal.
+
+Que no sea normal no quiere decir que no pueda ser normalizable, ya que segun el teorema del limite central al tener mas de 30 elementos en las observaciones podemos aproximarla como una distribución normal de media 0 y desviación estandard 1
 
 # Creción de conjunto training y test
 
@@ -248,6 +300,7 @@ p.mat <- cor.mtest(heart.original)
 ```
 
 Se observa que las variables **chol, trtbps y fbs** no están significativamente relacionadas con output.
+
 ```{r, echo=FALSE}
 M<-cor(heart.original)
 col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
