@@ -147,13 +147,15 @@ str(heart)
 
 # Limpieza de datos
 
-## 
+## Valores vacíos
 
 Se comprueba que no hay ninguna columna vacía
 
 ```{r}
 print(sum(is.na(heart)))
 ```
+
+## Duplicados
 
 Se observa que hay duplicado:
 
@@ -172,30 +174,64 @@ heart<-heart[!duplicated(heart),]
 Se identifican valores extremos en variables númericas
 
 ```{r}
+#ggpairs(heart,               # Data frame
+#        columns = numericas, # Columnas
+#        aes(color = output,  # Color por grupo (var. categórica)
+#            alpha = 0.5))    # Transparencia
+```
+
+Se detectan outliers las columnas:
+-   **trtbps** : filas 9, 102, 111, 204, 224, 242, 249, 261, 267 
+-   **chol** : filas 29, 86, 97, 221, 247 
+-   **oldpeak** : filas 102, 205, 222, 251, 292
+
+Se decide quitarlos. Ejemplo de limpieza de outliers:
+```{r,echo=FALSE}
+boxplot(heart$trtbps,main="Columna boxplot anterior a la limpieza")
+```
+
+
+
+
+```{r,echo=FALSE}
 numericas<-c("age","trtbps","chol","thalachh","oldpeak")
 
-ggpairs(heart,               # Data frame
-        columns = numericas, # Columnas
-        aes(color = output,  # Color por grupo (var. categórica)
-            alpha = 0.5))    # Transparencia
+rows2Delete<-c()
 
 for (columnName in numericas) {
-  meanColumn<-mean(heart[[columnName]])
-  sdColumn<-sd(heart[[columnName]])
-  lower<-meanColumn-sdColumn*2.5
-  higher<-meanColumn+sdColumn*2.5
-  outliers_lower<-length(which(heart[[columnName]]<lower))
-  outliers_higher<-length(which(heart[[columnName]]>higher))
-  if (outliers_higher | outliers_higher){
-    cat("Outliers detectados en",
-        columnName,
-        ": ",
-        sum(outliers_lower,outliers_higher),"\n")
+  q1<-quantile(heart[[columnName]],0.25)
+  q3<-quantile(heart[[columnName]],0.75)
+  iqr<-q3-q1
+  
+  #meanColumn<-mean(heart[[columnName]])
+  #sdColumn<-sd(heart[[columnName]])
+  
+  #lower<-meanColumn-sdColumn*2.5
+  #higher<-meanColumn+sdColumn*2.5
+
+  lower<-q1-iqr*1.5
+  higher<-q3+iqr*1.5  
+  
+  outliers_lower<-which(heart[[columnName]]<lower)
+  outliers_higher<-which(heart[[columnName]]>higher)
+  if (length(outliers_higher) | length(outliers_higher)){
+    #cat("Outliers detectados en",
+    #    columnName,
+    #    " Filas: ",
+    #    outliers_lower,outliers_higher,"\n")
+    rows2Delete<-append(rows2Delete,outliers_lower)
+    rows2Delete<-append(rows2Delete,outliers_higher)
   }
 }
 
+heart<-heart[-rows2Delete,]
 
 ```
+
+```{r,echo=FALSE}
+boxplot(heart$trtbps,main="Columna boxplot posterior a la limpieza")
+```
+
 
 # Creción de conjunto training y test
 
