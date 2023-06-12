@@ -389,13 +389,6 @@ correlación</a></li>
 </ul>
 </div>
 
-<pre class="r"><code>library(rminer)
-library(pROC)
-library(corrplot)
-library(RColorBrewer)
-require(ggplot2)
-if (!require(&#39;GGally&#39;)) install.packages(&#39;GGally&#39;)
-library(GGally)</code></pre>
 <div id="descripción-del-dataset" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Descripción del
 dataset</h1>
@@ -404,9 +397,10 @@ Attack Analysis &amp; Prediction
 Dataset</strong></a><strong>.</strong></p>
 <p>Es un conjunto de datos de análisis y predición de ataques cardiados.
 Está diseñado para la práctica de análisis estadístico, ya que el número
-de muestras es muy pequeño. Y el objetivo es predecir las posibilidades
-de sufrir un ataque al corazón, teniendo en cuenta los datos
-proporcionado por el mismo.</p>
+de muestras es muy pequeño.</p>
+<p>El objetivo de la práctica es predecir las posibilidades de sufrir un
+ataque al corazón y estudiar qué factores son los más influyentes en
+esta dolencia.</p>
 <p>El conjunto está formado por dos ficheros que contienen las
 siguientes variables.</p>
 <ul>
@@ -539,24 +533,183 @@ heart$thalachh&lt;-as.numeric(heart$thalachh)
 #Output es la variable que vamos a utilizar para comparar si nuestro
 heart$output&lt;-as.factor(heart$output)
 levels(heart$output)&lt;-c(&quot;Less chance&quot;,&quot;More chance&quot;)</code></pre>
-<p><a href="https://www.analyticsvidhya.com/blog/2021/05/classification-algorithms-in-python-heart-attack-prediction-and-analysis/" class="uri">https://www.analyticsvidhya.com/blog/2021/05/classification-algorithms-in-python-heart-attack-prediction-and-analysis/</a></p>
 <p>Comprobamos los nuevos tipos de datos de las variables</p>
-<pre class="r"><code>str(heart)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    303 obs. of  14 variables:
-##  $ age     : int  63 37 41 56 57 57 56 44 52 57 ...
-##  $ sex     : Factor w/ 2 levels &quot;0&quot;,&quot;1&quot;: 2 2 1 2 1 2 1 2 2 2 ...
-##  $ cp      : Factor w/ 4 levels &quot;Tipical angina&quot;,..: 4 3 2 2 1 1 2 2 3 3 ...
-##  $ trtbps  : num  145 130 130 120 120 140 140 120 172 150 ...
-##  $ chol    : num  233 250 204 236 354 192 294 263 199 168 ...
-##  $ fbs     : Factor w/ 2 levels &quot;False&quot;,&quot;True&quot;: 2 1 1 1 1 1 1 1 2 1 ...
-##  $ restecg : Factor w/ 3 levels &quot;Normal&quot;,&quot;ST-T wave abnormality&quot;,..: 1 2 1 2 2 2 1 2 2 2 ...
-##  $ thalachh: num  150 187 172 178 163 148 153 173 162 174 ...
-##  $ exng    : Factor w/ 2 levels &quot;No&quot;,&quot;Yes&quot;: 1 1 1 1 2 1 1 1 1 1 ...
-##  $ oldpeak : num  2.3 3.5 1.4 0.8 0.6 0.4 1.3 0 0.5 1.6 ...
-##  $ slp     : Factor w/ 3 levels &quot;unsloping&quot;,&quot;flat&quot;,..: 1 1 3 3 3 2 2 3 3 3 ...
-##  $ caa     : int  0 0 0 0 0 0 0 0 0 0 ...
-##  $ thall   : Factor w/ 4 levels &quot;null&quot;,&quot;fixed defect&quot;,..: 2 3 3 3 3 2 3 4 4 3 ...
-##  $ output  : Factor w/ 2 levels &quot;Less chance&quot;,..: 2 2 2 2 2 2 2 2 2 2 ...</code></pre>
+<pre class="r"><code>tabla&lt;-data.frame(variable = names(heart),
+           Original = sapply(heart.original, class),
+           Final = sapply(heart, class),
+           row.names = NULL)
+kable(tabla,&quot;html&quot;)</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+variable
+</th>
+<th style="text-align:left;">
+Original
+</th>
+<th style="text-align:left;">
+Final
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+age
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+sex
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+factor
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+cp
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+factor
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+trtbps
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+numeric
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+chol
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+numeric
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+fbs
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+factor
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+restecg
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+factor
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+thalachh
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+numeric
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+exng
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+factor
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+oldpeak
+</td>
+<td style="text-align:left;">
+numeric
+</td>
+<td style="text-align:left;">
+numeric
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+slp
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+factor
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+caa
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+thall
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+factor
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+output
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+factor
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>

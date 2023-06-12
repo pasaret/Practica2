@@ -22,6 +22,8 @@ library(RColorBrewer)
 require(ggplot2)
 if (!require('GGally')) install.packages('GGally')
 library(GGally)
+library(kableExtra)
+library(knitr)
 ```
 
 # Descripción del dataset
@@ -139,8 +141,12 @@ levels(heart$output)<-c("Less chance","More chance")
 
 Comprobamos los nuevos tipos de datos de las variables
 
-```{r}
-str(heart)
+```{r echo=FALSE}
+tabla<-data.frame(variable = names(heart),
+           Original = sapply(heart.original, class),
+           Final = sapply(heart, class),
+           row.names = NULL)
+kable(tabla,"html")
 ```
 
 # Limpieza de datos
