@@ -14,7 +14,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 library(rminer)
 library(pROC)
 library(corrplot)
@@ -28,7 +28,9 @@ library(GGally)
 
 El dataset seleccionado para la práctica se denomina [**Heart Attack Analysis & Prediction Dataset**](https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset)**.**
 
-Es un conjunto de datos de análisis y predición de ataques cardiados. Está diseñado para la práctica de análisis estadístico, ya que el número de muestras es muy pequeño. Y el objetivo es predecir las posibilidades de sufrir un ataque al corazón, teniendo en cuenta los datos proporcionado por el mismo.
+Es un conjunto de datos de análisis y predición de ataques cardiados. Está diseñado para la práctica de análisis estadístico, ya que el número de muestras es muy pequeño.  
+
+El objetivo de la práctica es predecir las posibilidades de sufrir un ataque al corazón y estudiar qué factores son los más influyentes en esta dolencia.
 
 El conjunto está formado por dos ficheros que contienen las siguientes variables.
 
@@ -134,8 +136,6 @@ heart$output<-as.factor(heart$output)
 levels(heart$output)<-c("Less chance","More chance")
 
 ```
-
-<https://www.analyticsvidhya.com/blog/2021/05/classification-algorithms-in-python-heart-attack-prediction-and-analysis/>
 
 Comprobamos los nuevos tipos de datos de las variables
 
