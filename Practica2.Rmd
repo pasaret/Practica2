@@ -22,15 +22,15 @@ library(RColorBrewer)
 require(ggplot2)
 if (!require('GGally')) install.packages('GGally')
 library(GGally)
-library(kableExtra)
 library(knitr)
+library(kableExtra)
 ```
 
 # Descripción del dataset
 
 El dataset seleccionado para la práctica se denomina [**Heart Attack Analysis & Prediction Dataset**](https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset)**.**
 
-Es un conjunto de datos de análisis y predición de ataques cardiados. Está diseñado para la práctica de análisis estadístico, ya que el número de muestras es muy pequeño.  
+Es un conjunto de datos de análisis y predición de ataques cardiados. Está diseñado para la práctica de análisis estadístico, ya que el número de muestras es muy pequeño.
 
 El objetivo de la práctica es predecir las posibilidades de sufrir un ataque al corazón y estudiar qué factores son los más influyentes en esta dolencia.
 
@@ -148,7 +148,7 @@ tabla<-data.frame(variable = names(heart),
            Original = sapply(heart.original, class),
            Final = sapply(heart, class),
            row.names = NULL)
-kable(tabla,"html")
+kable(tabla,format="html") %>% kable_styling(bootstrap_options = "striped")
 ```
 
 # Limpieza de datos
