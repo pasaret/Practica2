@@ -142,6 +142,8 @@ levels(heart$output)<-c("Less chance","More chance")
 Comprobamos los nuevos tipos de datos de las variables
 
 ```{r echo=FALSE}
+# No se porqué no me genera la tabla con un formato bonito
+
 tabla<-data.frame(variable = names(heart),
            Original = sapply(heart.original, class),
            Final = sapply(heart, class),
