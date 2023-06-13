@@ -72,22 +72,17 @@ El conjunto está formado por dos ficheros que contienen las siguientes variable
 
 -   **output**:
 
-    -   0= menos posibilidades de ataque al corazón
+    -   0= enfermedad cardíaca diagnosticada
 
-    -   1= más posibilidades de ataque al corazón
+    -   1= enfermedad cardíaca diagnosticada
 
 # Integración y selección de los datos de interés a analizar
 
-## Análisis exploratorio
-
-El primer paso para realizar un análisis exploratorio es cargar el fichero de datos.
-
+Carga del fichero:
 ```{r}
 # carga de datos
 heart <- read.csv(file = 'heart.csv')
 ```
-
-### Exploración del conjunto de datos
 
 Verificamos la estructura del juego de datos principal. Vemos el número de columnas que tenemos y ejemplos de los contenidos de las filas.
 
@@ -105,11 +100,12 @@ head(heart, 10)
 
 La descripción de las variables ha sido realizada por la autora en [la documentación de kaggle](#https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset/discussion/329925)
 
-Vamos a factorizar las variables categóricas. La variable ¨sex¨ se desconoce cómo está codificada, y las numéricas no categóricas vamos a transformarlas en variables numéricas. Se factoriza igualmente la variable output, que se utilizará para evaluar la precisión de nuestro modelo:
+Vamos a factorizar las variables categóricas. Las variables numéricas no categóricas se transforman en variables numéricas. Se factoriza igualmente la variable output, que se utilizará para evaluar la precisión de nuestro modelo:
 
 ```{r}
 heart.original<-heart
 heart$sex<-as.factor(heart$sex)
+levels(heart$age)<-c("Mujer","Hombre")
 
 heart$exng<-as.factor(heart$exng)
 levels(heart$exng)<-c("No","Yes")
@@ -135,19 +131,18 @@ heart$thalachh<-as.numeric(heart$thalachh)
 
 #Output es la variable que vamos a utilizar para comparar si nuestro
 heart$output<-as.factor(heart$output)
-levels(heart$output)<-c("Less chance","More chance")
+levels(heart$output)<-c("no disease","disease")
 
 ```
 
-Comprobamos los nuevos tipos de datos de las variables
+Comprobamos los transformaciones realizadas:
 
 ```{r echo=FALSE}
-# No se porqué no me genera la tabla con un formato bonito
-
 tabla<-data.frame(variable = names(heart),
            Original = sapply(heart.original, class),
            Final = sapply(heart, class),
            row.names = NULL)
+names(tabla)<-c("Variable","Clase original","Clase modificada")
 kable(tabla,format="html") %>% kable_styling(bootstrap_options = "striped")
 ```
 
@@ -170,7 +165,7 @@ sum(duplicated(heart))
 heart<-heart[!duplicated(heart),]
 ```
 
-# Identificación y gestión de valores extremos
+## Identificación y gestión de valores extremos
 
 Se identifican valores extremos en las siguientes variables numéricas:\
 - **trtbps** : filas 9, 102, 111, 204, 224, 242, 249, 261, 267\
@@ -219,6 +214,55 @@ par(mfrow=c(1,2))
 boxplot(heart.old$trtbps,main="Con outliers")
 boxplot(heart$trtbps,main="Sin outliers")
 ```
+
+# Análisis de los datos
+
+## Análisis exploratorio
+
+Este análisis empieza por la exploración del conjunto de observaciones en base al diagnóstico obtenido de cada paciente. Se observa un total de 126 pacientes sin enfermedad cardíaca contra 158 pacientes diagnosticados con enfermedad cardíaca:
+
+```{r, echo=FALSE}
+ggplot(heart, aes(x=output)) +
+  geom_bar() +  
+  labs(x='Result') + 
+  scale_x_discrete(labels=c("No heart disease","Heart disease")) +
+  ggtitle("Diagnóstico de enfermedad cardíaca")
+```
+
+Sin embargo, si se analizan este parámetro en función del sexo, se observa una desproporción en la proporción de mujeres diagnosticadas con dolencia cardíaca frente a los hombres:
+
+```{r, echo=FALSE}
+table(heart$output,heart$sex)
+```
+
+```{r, echo=FALSE}
+ggplot(heart, aes(x=output,fill=sex)) +
+  geom_bar() +  
+  labs(x='Result') + 
+  scale_x_discrete(labels=c("No heart disease","Heart disease")) +
+  ggtitle("Diagnóstico de enfermedad cardíaca por sexo")
+```
+
+El análisis de componentes principales nos indica que la edad explica el 35% de la varianza en el diagnóstico:
+
+```{r, echo=FALSE}
+componentesPrin <- prcomp(heart[,numericas], center = TRUE, scale = TRUE)
+summary(componentesPrin)
+```
+
+Por lo tanto, se realiza un gráfico del diagnóstico en función de la edad:
+
+```{r,echo=FALSE}
+ggplot(heart, aes(x=age,fill=output)) +
++     geom_histogram() +  
++     labs(x='Edad') + 
++     ggtitle("Diagnóstico de enfermedad cardíaca por edad")
+```
+
+
+## Contrastes de hipótesis
+
+dddd
 
 # Normalización de datos
 
@@ -273,7 +317,9 @@ El test nos indica que sólo la variable **chol** esta normalizada, ya que para 
 
 Que no sea normal no quiere decir que no pueda ser normalizable, ya que segun el teorema del limite central al tener mas de 30 elementos en las observaciones podemos aproximarla como una distribución normal de media 0 y desviación estandard 1
 
-# Creción de conjunto training y test
+# Construcción de un modelo predictivo
+
+## Creción de conjunto training y test
 
 Se decide utilizar separar el conjunto original en un 80% para training y un 20% para test.
 
@@ -283,8 +329,6 @@ h<-holdout(heart$output,ratio=0.8)
 heartTraining<-heart[h$tr,]
 heartTest<-heart[h$ts,]
 ```
-
-# Construcción de modelo
 
 ## Identificación de correlación
 
@@ -351,4 +395,4 @@ test_roc = roc(heartTest$output~output_predicted, plot = TRUE, print.auc = TRUE)
 auc(test_roc)
 ```
 
-# Resolución del problema
+# Resolución del problema, conclusiones
