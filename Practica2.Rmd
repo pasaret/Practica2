@@ -417,6 +417,12 @@ El test nos indica que sólo la variable **chol** esta normalizada, ya que para 
 
 Que no sea normal no quiere decir que no pueda ser normalizable, ya que segun el teorema del limite central al tener mas de 30 elementos en las observaciones podemos aproximarla como una distribución normal de media 0 y desviación estandard 1
 
+Escalado de valores para oldpeak:
+```{r}
+heart$oldpeak = scale(heart$oldpeak)
+```
+
+
 ## Revisión de homocedasticidad
 
 # Construcción de un modelo predictivo
