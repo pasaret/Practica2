@@ -15,6 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
+library("gridExtra")
+library(dplyr)
 library(rminer)
 library(pROC)
 library(corrplot)
@@ -111,7 +113,7 @@ Vamos a factorizar las variables categóricas. Las variables numéricas no categ
 ```{r}
 heart.original<-heart
 heart$sex<-as.factor(heart$sex)
-levels(heart$age)<-c("Mujer","Hombre")
+levels(heart$sex)<-c("Female","Male")
 
 heart$exng<-as.factor(heart$exng)
 levels(heart$exng)<-c("No","Yes")
@@ -184,8 +186,8 @@ heart<-heart[!duplicated(heart),]
 Vamos a identificar los valores extremos. Para ello vamos a tomar el criterio de considerar extremos a aquellos valores alejados 1,5 veces la diferencia entre el primer y el tercer cuartil:
 
 ```{r,echo=FALSE}
-heart.old<-heart
-heart.todrop<-heart
+#heart.old<-heart
+
 numericas<-c("age","trtbps","chol","thalachh","oldpeak")
 
 rows2Delete<-c()
@@ -206,11 +208,11 @@ for (columnName in numericas) {
   }
 }
 
-heart.todrop<-heart[rows2Delete,]
+#heart.todrop<-heart[rows2Delete,]
+#heart.todrop<-heart[-rows2Delete,]
+#View(heart.todrop)
 
-View(heart.todrop)
-
-#heart<-heart[-rows2Delete,]
+heart<-heart[-rows2Delete,]
 
 ```
 
@@ -222,32 +224,31 @@ Se identifican valores extremos en las siguientes variables numéricas:\
 Se decide quitar las observaciones extremas del dataset. Ejemplo con la variable **trtbps.** No tenemos conocimiento del motivo de que dicha medidas tengan esos valores tan extremos, pero son claramente anómalos, ya que unas pulsasiones de 140 ya se consideran extremadamente peligrosas, y hablamos de eliminar pulsaciones mayores de 172.:
 
 ```{r,echo=FALSE}
-par(mfrow=c(1,2))
-boxplot(heart.old$trtbps,main="Con outliers")
+par(mfrow=c(1,2), oma=c(0,0,2,0))
+boxplot(heart.original$trtbps,main="Con outliers")
 boxplot(heart$trtbps,main="Sin outliers")
+mtext("Variable trtbps",line=0, side=3, outer=TRUE,cex=2)
 ```
 
 De igual manera actuamos con la variable chol (colesterol).
 
 ```{r,echo=FALSE}
-par(mfrow=c(1,2))
-boxplot(heart.old$chol, main="Con outliers")
+par(mfrow=c(1,2), oma=c(0,0,2,0))
+boxplot(heart.original$chol, main="Con outliers")
 boxplot(heart$chol, main="Sin outliers")
+mtext("Variable chol",line=0, side=3, outer=TRUE,cex=2)
 ```
 
-Y con el pico previo.
+Y con la variable oldpeak.
 
 ```{r,echo=FALSE}
-par(mfrow=c(1,2))
-boxplot(heart.old$oldpeak, main="Con outliers")
+par(mfrow=c(1,2), oma=c(0,0,2,0))
+boxplot(heart.original$oldpeak, main="Con outliers")
 boxplot(heart$oldpeak, main="Sin outliers")
+mtext("Variable oldpeak",line=0, side=3, outer=TRUE,cex=2)
 ```
 
 Para fundamentar esta actuaciones, deberíamos tener información sobre a la forma en la que se han llevado a cabo las medidas para poder comprobar que realmente se trata de medidas anómalas.
-
-```{r}
-heart<-heart[-rows2Delete,]
-```
 
 # Análisis de los datos
 
@@ -255,15 +256,19 @@ heart<-heart[-rows2Delete,]
 
 Este análisis empieza por la exploración del conjunto de observaciones en base al diagnóstico obtenido de cada paciente. Se observa un total de 126 pacientes sin enfermedad cardíaca contra 158 pacientes diagnosticados con enfermedad cardíaca:
 
+```{r,echo=FALSE}
+table(heart$output)
+```
+
 ```{r, echo=FALSE}
 ggplot(heart, aes(x=output, fill=output)) +
   geom_bar() +  
   labs(x='Result') + 
-  scale_x_discrete(labels=c("No heart disease","Heart disease")) +
-  ggtitle("Diagnóstico de enfermedad cardíaca")
+  ggtitle("Diagnóstico de enfermedad cardíaca") + 
+  theme(legend.position = "none")
 ```
 
-Sin embargo, si se analizan este parámetro en función del sexo, se observa una desproporción en la proporción de mujeres diagnosticadas con dolencia cardíaca frente a los hombres:
+Sin embargo, si se analizan este parámetro en función del sexo (nuestro objecto de estudio), se observa una desproporción en la proporción de mujeres diagnosticadas con dolencia cardíaca frente a los hombres:
 
 ```{r, echo=FALSE}
 table(heart$output,heart$sex)
@@ -284,19 +289,84 @@ El análisis de componentes principales nos indica que la edad explica el 35% de
 componentesPrin <- prcomp(heart[,numericas], center = TRUE, scale = TRUE)
 summary(componentesPrin)
 ```
+Por ello se visualiza el diagnóstico de enfermedad cardíaca en función de la edad. Se observa que la posibilidad de un diagnóstico de enfermedad cardíaca es mayor entre los 40 y 60 años:
 
-Por lo tanto, se realiza un gráfico del diagnóstico en función de la edad:
-
-```{r,echo=FALSE}
+```{r,echo=FALSE,warning=FALSE}
 ggplot(heart, aes(x=age,fill=output)) +
-     geom_histogram() +  
+     geom_histogram(bins=10) +  
      labs(x='Edad') + 
      ggtitle("Diagnóstico de enfermedad cardíaca por edad")
 ```
 
-## Contrastes de hipótesis
+Se estudia si el diagnóstico de enfermedad cardíaca aparece de forma distinta en hombres y mujeres en función de la edad:
 
-dddd
+```{r,echo=FALSE,warning=FALSE}
+#heart.disease<-heart[which(heart$output=="disease"),]
+
+plot.hombres<-ggplot(heart[heart$sex=="Male",], aes(x=age,fill=output)) +
+     geom_histogram(bins=10) +  
+     labs(x='Edad') + 
+     ggtitle("Sexo masculino")+
+  scale_x_continuous(limits=c(25, 80)) +
+  theme(legend.position="bottom")
+
+plot.mujeres<-ggplot(heart[heart$sex=="Female",], aes(x=age,fill=output)) +
+     geom_histogram(bins=10) +  
+     labs(x='Edad') + 
+     ggtitle("Sexo femenino")+
+  scale_x_continuous(limits=c(25, 80)) +
+  theme(legend.position="bottom")
+
+require(gridExtra)
+grid.arrange(plot.hombres, plot.mujeres, ncol=2, top = "Diagnostico enfermedad cardiaca por edad y sexo")
+```
+
+Por el gráfico anterior parece que en la muestra de mujeres el diagnóstico de enfermedad cardíaca es más estable, lo cual se confirma con el siguiente gráfico:
+
+```{r, echo=FALSE}
+plot.hombres<-ggplot(heart[heart$sex=="Male",],aes(x=age,fill=output)) +
+     geom_bar(position="fill") +
+     labs(x='Edad',y='') +
+  scale_fill_manual(values = c("#FFFFFF", "#6A51A3")) +
+  scale_x_continuous(limits=c(25, 80)) +
+     ggtitle("Sexo masculino") +
+  theme(legend.position = "none",
+        panel.background=element_rect(fill = '#FFFFFF'))
+
+plot.mujeres<-ggplot(heart[heart$sex=="Female",], aes(x=age,fill=output)) +
+     geom_bar(position="fill") +
+     labs(x='Edad',y='') +
+  scale_fill_manual(values = c("#FFFFFF", "#6A51A3")) +
+  scale_x_continuous(limits=c(25, 80)) +
+     ggtitle("Sexo femenino") + 
+  theme(legend.position = "none",
+        panel.background=element_rect(fill = '#FFFFFF'))
+require(gridExtra)
+grid.arrange(plot.hombres, plot.mujeres, ncol=2, top = "Porcentaje de enfermos cardiacos por edad y sexo")
+```
+
+Conclusiones del análisis exploratorio:  
+- Parece haber una mayor proporción de mujeres diagnosticadas con enfermedad cardíaca que en hombres.  
+- Parece que la proporción de mujeres diagnosticadas con enfermedad cardíaca se mantiene estable en el tiempo, mientras que en los hombre decrece.
+
+## Contraste de hipótesis sobre la proporción de sexos
+
+Se desea realizar un primer contraste en el que se evalue si la proporción de enfermos en función del sexo tiene una varianza significativa. Se dispone de 2 muestras independientes (Hombres y mujeres):
+
+```{r}
+table(heart$sex,heart$output)
+```
+
+Para comparar diferencias significativas entre en una variable categórica (output) entre dos grupos definidos se utiliza la función chisq.test():
+
+```{r}
+chisq.test(table(heart$sex,heart$output))
+```
+
+Se observan diferencias significativas entre los hombres y mujeres en sus diagnósticos.
+
+## Contraste de hipótesis sobre varianza en la edad de personas diagnosticadas en función del sexo
+dfdfd
 
 # Normalización de datos
 
@@ -408,6 +478,14 @@ summary(Modelo)
 ```
 
 ## Evaluación del modelo
+
+```{r}
+plot(Modelo,which=1)
+```
+
+```{r}
+plot(Modelo,which=2)
+```
 
 ```{r}
 output_predicted <- predict(Modelo,newdata=heartTest,type='response')
