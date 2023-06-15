@@ -27,6 +27,7 @@ library(GGally)
 library(knitr)
 library(kableExtra)
 library(car)
+library(caret)
 library("DescTools")
 ```
 
@@ -253,7 +254,7 @@ Para fundamentar esta actuaciones, deberíamos tener información sobre a la for
 
 # Análisis de los datos
 
-## Análisis exploratorio
+## Análisis estadístico descriptivo
 
 Este análisis empieza por la exploración del conjunto de observaciones en base al diagnóstico obtenido de cada paciente. Se observa un total de 126 pacientes sin enfermedad cardíaca contra 158 pacientes diagnosticados con enfermedad cardíaca:
 
@@ -351,51 +352,7 @@ Conclusiones del análisis exploratorio:
 - Parece haber una mayor proporción de mujeres diagnosticadas con enfermedad cardíaca que en hombres.  
 - Parece que la proporción de mujeres diagnosticadas con enfermedad cardíaca se mantiene estable en el tiempo, mientras que en los hombre decrece.
 
-## Contraste de hipótesis de independencia entre las variables sexo-output
-
-Se desea realizar un primer contraste en el que se evalue si las variables categóricas sexo y output se encuentra relacionadas.   
-
-Se dispone de 2 muestras independientes (Hombres y mujeres):
-
-```{r}
-table(heart$sex,heart$output)
-```
-
-Para comparar diferencias significativas entre en una variable categórica (output) entre dos grupos definidos se utiliza la función chisq.test():
-
-```{r}
-chisq.test(table(heart$sex,heart$output))
-```
-Dado que se recoge un p-valor muy pequeño, se rechaza la hipótesis nula y se confirma que se observan diferencias significativas entre los hombres y mujeres en sus diagnósticos.
-
-## Contraste de hipótesis sobre varianza en la edad 
-
-Se desea comparar la varianza en la edad de los dos grupos (Hombre, Mujer). Se considera que se trata de dos muestras independientes con varianza desconocida.
-
-Dado que se dispone de una cantidad de muestras significativa (199 y 85) se asume normalidad de en los datos por el Teorema del Límite Central. 
-
-```{r}
-leveneTest(y = heart$age, group = heart$sex, center = "median")
-```
-Se obtiene un p-valor mayor que el nivel de significancia, por lo tanto se asume la hipótesis normal: no hay diferencias significativas en la varianza de en la edad en los dos grupos.
-
-## Contraste de hipótesis sobre varianza en la edad en muestra diagnosticada
-
-Se desea comparar la proporción dos grupos (Hombre, Mujer) pero esta vez se realiza solamente en el conjunto de muestra diagnosticada. Se considera que se trata de dos muestras independientes con varianza desconocida.
-
-Dado que se dispone de una cantidad de muestras significativa (68 Female y 90 Male) se asume normalidad de en los datos.
-
-```{r}
-heart.disease<-heart[which(heart$output=="disease"),]
-t.test(heart.disease$age[heart.disease$sex=="Male"],heart.disease$age[heart.disease$sex=="Female"],alternative="two.sided")
-```
-Se obtiene un valor menor que el nivel de significancia, por lo tanto se rechaza la hipótesis normal: hay diferencias significativas en la varianza de en la edad en los dos grupos cuando se trata de población enferma.
-
-# Normalización de datos
-
-------------------------------------------------------------------------
-
-## Revisión de datos normalizados
+## Comprobación de normalidad
 
 Para revisar si las variables pueden ser candidatas a la normalización miramos las graficas de quantile-quantile plot y el histograma.
 
@@ -416,24 +373,13 @@ Los resultados del quantile-quantile plot nos indica que las variables pueden se
 
 Para revisar si las variables estan normalizadas se aplica el test de Shapiro Wilk en cada variables numérica.
 
-```{r ,eval=TRUE,echo=TRUE}
-shapiro.test(heart$age)
-```
-
-```{r ,eval=TRUE,echo=TRUE}
-shapiro.test(heart$trtbps)
-```
-
-```{r ,eval=TRUE,echo=TRUE}
-shapiro.test(heart$chol)
-```
-
-```{r ,eval=TRUE,echo=TRUE}
-shapiro.test(heart$thalachh)
-```
-
-```{r ,eval=TRUE,echo=TRUE}
-shapiro.test(heart$oldpeak)
+```{r,echo=FALSE}
+for(i in numericas) {
+   cat("P-valor Shapiro test para variable",
+       i,
+       ": ",
+       shapiro.test(heart[[i]])$p.value,"\n")
+}
 ```
 
 El test de normalidad de Shapiro-Wilk trabaja con la hipótesis nula de normalidad de los datos. Se observa un p-valor menor que el nivel de significancia (0.05) para las siguientes variables:  
@@ -456,11 +402,13 @@ heart.norm$oldpeak<-BoxCox(heart$oldpeak,lambda = BoxCoxLambda(heart$oldpeak))
 ```
 
 Se revisan los p-valor de los test de Shapiro nuevamente para estas variables:
-```{r}
-shapiro.test(heart.norm$age)$p.value
-shapiro.test(heart.norm$trtbps)$p.value
-shapiro.test(heart.norm$thalachh)$p.value
-shapiro.test(heart.norm$oldpeak)$p.value
+```{r,echo=FALSE}
+for(i in numericas) {
+   cat("P-valor Shapiro test para variable",
+       i,
+       ": ",
+       shapiro.test(heart.norm[[i]])$p.value,"\n")
+}
 ```
 Se observa que se ha mejorado el p-valor para las variables age, trtbps y thalachh. Sin embargo la variable oldpeak ha arrojado un p-valor mucho más pequeño, por lo que esta transformación no se guardará en nuestro conjunto de observaciones:
 ```{r}
@@ -469,7 +417,47 @@ heart$trtbps<-heart.norm$trtbps
 heart$thalachh<-heart.norm$thalachh
 ```
 
-## Revisión de homocedasticidad
+## Análisis estadístico inferencial
+
+### Contraste de hipótesis de independencia entre las variables sexo-output
+
+Se desea realizar un primer contraste en el que se evalue si las variables categóricas sexo y output se encuentra relacionadas.   
+
+Se dispone de 2 muestras independientes (Hombres y mujeres):
+
+```{r}
+table(heart$sex,heart$output)
+```
+
+Para comparar diferencias significativas entre en una variable categórica (output) entre dos grupos definidos se utiliza la función chisq.test():
+
+```{r}
+chisq.test(table(heart$sex,heart$output))
+```
+Dado que se recoge un p-valor muy pequeño, se rechaza la hipótesis nula y se confirma que se observan diferencias significativas entre los hombres y mujeres en sus diagnósticos.
+
+### Contraste de hipótesis sobre varianza en la edad 
+
+Se desea comparar la varianza en la edad de los dos grupos (Hombre, Mujer). Se considera que se trata de dos muestras independientes con varianza desconocida.
+
+Dado que se dispone de una cantidad de muestras significativa (199 y 85) se asume normalidad de en los datos por el Teorema del Límite Central. 
+
+```{r}
+leveneTest(y = heart$age, group = heart$sex, center = "median")
+```
+Se obtiene un p-valor mayor que el nivel de significancia, por lo tanto se asume la hipótesis normal: no hay diferencias significativas en la varianza de en la edad en los dos grupos.
+
+### Contraste de hipótesis sobre varianza en la edad en muestra diagnosticada
+
+Se desea comparar la proporción dos grupos (Hombre, Mujer) pero esta vez se realiza solamente en el conjunto de muestra diagnosticada. Se considera que se trata de dos muestras independientes con varianza desconocida.
+
+Dado que se dispone de una cantidad de muestras significativa (68 Female y 90 Male) se asume normalidad de en los datos.
+
+```{r}
+heart.disease<-heart[which(heart$output=="disease"),]
+t.test(heart.disease$age[heart.disease$sex=="Male"],heart.disease$age[heart.disease$sex=="Female"],alternative="two.sided")
+```
+Se obtiene un valor menor que el nivel de significancia, por lo tanto se rechaza la hipótesis normal: hay diferencias significativas en la varianza de en la edad en los dos grupos cuando se trata de población enferma.
 
 # Construcción de un modelo predictivo
 
@@ -521,25 +509,48 @@ corrplot(M, method="color", col=col(200),
          )
 ```
 
-```{r}
-Modelo=glm(formula=output~sex+age+cp+thalachh+exng+oldpeak+slp+caa+thall,
+Dado que se dispone de variables categóricas, se utiliza un modelo de regresión logística en el que se cuenta con las variables de edad y sexo, junto con las variables más correlacionadas con output detectas en el gráfico anterior:  
+
+```{r, echo=FALSE}
+Modelo=glm(
+  formula=output~sex+age+cp+thalachh+exng+oldpeak+slp+caa+thall,
            data=heartTraining,
            family=binomial)
 
 summary(Modelo)
 ```
 
-## Evaluación del modelo
+## Bondad del ajuste
+
+Se evalúa la bondad del ajuste, mediante la devianza. Para que el modelo sea bueno, la devianza residual debe ser menor que la devianza nula. 
+
+```{r}
+dev <- Modelo$deviance
+nullDev <- Modelo$null.deviance
+Chi_Obs <- nullDev - dev
+Chi_Obs
+
+```
+
+Dado que el resultado es positivo, podemos deducir que el modelo predice la variable dependiente con mayor precisión.
+
+## Evaluación de residuos
 
 ```{r}
 plot(Modelo,which=1)
 ```
 
+A través de este gráfico se aprecia que la varianza de los residuos en nuestro modelo no es constante, lo cual puede indicar que el modelo eligido no es óptimo.
+
+## Normalidad del modelo
+
 ```{r}
 plot(Modelo,which=2)
 ```
 
-```{r}
+## Matriz de confusión
+Se obtiene la matriz de confusión:
+```{r,echo=FALSE}
 output_predicted <- predict(Modelo,newdata=heartTest,type='response')
 
 #Se asume que la predicción del modelo es 1 si el modelo de regresión logística es 0.8 o mayor.
@@ -548,7 +559,6 @@ output_predicted <- ifelse(output_predicted > 0.8,1,0)
 matrix_confusion<-table(output_predicted,heartTest$output)
 matrix_confusion
 ```
-
 ## Evaluación de la potencia
 
 ```{r}
@@ -558,3 +568,5 @@ auc(test_roc)
 ```
 
 # Resolución del problema, conclusiones
+- La variable edad es una variable influyente en la predicción de un diagnóstico de enfermedad cardíaca
+- 
