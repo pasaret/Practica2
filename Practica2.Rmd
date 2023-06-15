@@ -583,3 +583,6 @@ write.csv(heart, "heartFinal.csv", row.names=FALSE)
 - No se infieren diferencias significativas en la población sujeta a estudio medical: es decir, no se infiere que los hombres o las mujeres van más al médico en busca de un diagnóstico.  
 - Sí se infiere una diferencia signfiicativa poblacional en el diagnóstico de enfermedad cardíaca entre hombres y mujeres: parece haber una mayor proporción de mujeres afectada por esta dolencia.  
 - El modelo predictivo elegido (regresión logística) es un modelo aceptable pero probablemente pueda ser mejorado por otros (objeto para un potencial posterior estudio).
+
+
+<img src="firmas.png"/>
