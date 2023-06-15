@@ -27,6 +27,7 @@ library(GGally)
 library(knitr)
 library(kableExtra)
 library(car)
+library("DescTools")
 ```
 
 # Descripción del dataset
@@ -346,12 +347,15 @@ grid.arrange(plot.hombres, plot.mujeres, ncol=2, top = "Porcentaje de enfermos c
 ```
 
 Conclusiones del análisis exploratorio:  
+- La posibilidad de un diagnóstico de enfermedad cardíaca es mayor entre los 40 y 60 años.  
 - Parece haber una mayor proporción de mujeres diagnosticadas con enfermedad cardíaca que en hombres.  
 - Parece que la proporción de mujeres diagnosticadas con enfermedad cardíaca se mantiene estable en el tiempo, mientras que en los hombre decrece.
 
-## Contraste de hipótesis sobre la proporción de sexos
+## Contraste de hipótesis de independencia entre las variables sexo-output
 
-Se desea realizar un primer contraste en el que se evalue si la proporción de enfermos en función del sexo tiene una varianza significativa. Se dispone de 2 muestras independientes (Hombres y mujeres):
+Se desea realizar un primer contraste en el que se evalue si las variables categóricas sexo y output se encuentra relacionadas.   
+
+Se dispone de 2 muestras independientes (Hombres y mujeres):
 
 ```{r}
 table(heart$sex,heart$output)
@@ -362,11 +366,30 @@ Para comparar diferencias significativas entre en una variable categórica (outp
 ```{r}
 chisq.test(table(heart$sex,heart$output))
 ```
+Dado que se recoge un p-valor muy pequeño, se rechaza la hipótesis nula y se confirma que se observan diferencias significativas entre los hombres y mujeres en sus diagnósticos.
 
-Se observan diferencias significativas entre los hombres y mujeres en sus diagnósticos.
+## Contraste de hipótesis sobre varianza en la edad 
 
-## Contraste de hipótesis sobre varianza en la edad de personas diagnosticadas en función del sexo
-dfdfd
+Se desea comparar la varianza en la edad de los dos grupos (Hombre, Mujer). Se considera que se trata de dos muestras independientes con varianza desconocida.
+
+Dado que se dispone de una cantidad de muestras significativa (199 y 85) se asume normalidad de en los datos por el Teorema del Límite Central. 
+
+```{r}
+leveneTest(y = heart$age, group = heart$sex, center = "median")
+```
+Se obtiene un p-valor mayor que el nivel de significancia, por lo tanto se asume la hipótesis normal: no hay diferencias significativas en la varianza de en la edad en los dos grupos.
+
+## Contraste de hipótesis sobre varianza en la edad en muestra diagnosticada
+
+Se desea comparar la proporción dos grupos (Hombre, Mujer) pero esta vez se realiza solamente en el conjunto de muestra diagnosticada. Se considera que se trata de dos muestras independientes con varianza desconocida.
+
+Dado que se dispone de una cantidad de muestras significativa (68 Female y 90 Male) se asume normalidad de en los datos.
+
+```{r}
+heart.disease<-heart[which(heart$output=="disease"),]
+t.test(heart.disease$age[heart.disease$sex=="Male"],heart.disease$age[heart.disease$sex=="Female"],alternative="two.sided")
+```
+Se obtiene un valor menor que el nivel de significancia, por lo tanto se rechaza la hipótesis normal: hay diferencias significativas en la varianza de en la edad en los dos grupos cuando se trata de población enferma.
 
 # Normalización de datos
 
@@ -413,15 +436,38 @@ shapiro.test(heart$thalachh)
 shapiro.test(heart$oldpeak)
 ```
 
-El test nos indica que sólo la variable **chol** esta normalizada, ya que para el resto de variables el p-valor es inferior al coeficiente 0.05, por lo que se puede rechazar la hipotesis nula y entender que no es normal.
+El test de normalidad de Shapiro-Wilk trabaja con la hipótesis nula de normalidad de los datos. Se observa un p-valor menor que el nivel de significancia (0.05) para las siguientes variables:  
+-  Age  
+-  Trtbps  
+-  Thalachh  
+-  Oldpeak  
 
-Que no sea normal no quiere decir que no pueda ser normalizable, ya que segun el teorema del limite central al tener mas de 30 elementos en las observaciones podemos aproximarla como una distribución normal de media 0 y desviación estandard 1
+Por lo tanto se asume la distribución no normal en estas variables.
 
-Escalado de valores para oldpeak:
+Se observa un p-valor mayor que el nivel de significancia para la variable **chol** y por lo tanto se asume que se encuentra distribuida normalmente.
+
+Se realizan transformaciones Box-cox para las variables detectadas no-normales:
 ```{r}
-heart$oldpeak = scale(heart$oldpeak)
+heart.norm<-heart
+heart.norm$age<-BoxCox(heart$age,lambda = BoxCoxLambda(heart$age))
+heart.norm$trtbps<-BoxCox(heart$trtbps,lambda = BoxCoxLambda(heart$trtbps))
+heart.norm$thalachh<-BoxCox(heart$thalachh,lambda = BoxCoxLambda(heart$thalachh))
+heart.norm$oldpeak<-BoxCox(heart$oldpeak,lambda = BoxCoxLambda(heart$oldpeak))
 ```
 
+Se revisan los p-valor de los test de Shapiro nuevamente para estas variables:
+```{r}
+shapiro.test(heart.norm$age)$p.value
+shapiro.test(heart.norm$trtbps)$p.value
+shapiro.test(heart.norm$thalachh)$p.value
+shapiro.test(heart.norm$oldpeak)$p.value
+```
+Se observa que se ha mejorado el p-valor para las variables age, trtbps y thalachh. Sin embargo la variable oldpeak ha arrojado un p-valor mucho más pequeño, por lo que esta transformación no se guardará en nuestro conjunto de observaciones:
+```{r}
+heart$age<-heart.norm$age
+heart$trtbps<-heart.norm$trtbps
+heart$thalachh<-heart.norm$thalachh
+```
 
 ## Revisión de homocedasticidad
 
