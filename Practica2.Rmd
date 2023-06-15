@@ -107,12 +107,12 @@ Vemos que tenemos **14** variables y **303** registros.
 A continuación vemos una muestra:
 
 ```{r}
-head(heart, 10)
+head(heart, 5)
 ```
 
-Vamos a factorizar las variables categóricas. Las variables numéricas no categóricas se transforman en variables numéricas. Se factoriza igualmente la variable output, que se utilizará para evaluar la precisión de nuestro modelo:
+Vamos a factorizar las variables categóricas. Las variables numéricas no categóricas se transforman en variables numéricas. Se factoriza igualmente la variable output, que se utilizará para evaluar la precisión de nuestro modelo.
 
-```{r}
+```{r, echo=FALSE}
 heart.original<-heart
 heart$sex<-as.factor(heart$sex)
 levels(heart$sex)<-c("Female","Male")
@@ -511,13 +511,11 @@ corrplot(M, method="color", col=col(200),
 
 Dado que se dispone de variables categóricas, se utiliza un modelo de regresión logística en el que se cuenta con las variables de edad y sexo, junto con las variables más correlacionadas con output detectas en el gráfico anterior:  
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 Modelo=glm(
   formula=output~sex+age+cp+thalachh+exng+oldpeak+slp+caa+thall,
            data=heartTraining,
            family=binomial)
-
-summary(Modelo)
 ```
 
 ## Bondad del ajuste
@@ -548,6 +546,8 @@ A través de este gráfico se aprecia que la varianza de los residuos en nuestro
 plot(Modelo,which=2)
 ```
 
+Por el gráfico qqnorm del modelo, se observa que los valores más bajos son menores que una distribución normal y los más altos son mayores que los de una distribución normal. Junto con el análisis anterior de los residuos, no se puede asumir normalidad en nuestro modelo.  
+
 ## Matriz de confusión
 Se obtiene la matriz de confusión:
 ```{r,echo=FALSE}
@@ -559,14 +559,27 @@ output_predicted <- ifelse(output_predicted > 0.8,1,0)
 matrix_confusion<-table(output_predicted,heartTest$output)
 matrix_confusion
 ```
+Por la matriz de confusión se calcula una exactitud de 0.68 (casos correctamente clasificados). Este valor se encuentra dentro un modelo aceptable en su límite inferior.  
+
 ## Evaluación de la potencia
 
-```{r}
+```{r, echo=FALSE}
 test_roc = roc(heartTest$output~output_predicted, plot = TRUE, print.auc = TRUE)
 
 auc(test_roc)
 ```
 
+El valor de área debajo de la curva es de 0.76, lo cual indica un modelo aceptable pero sin contar con resultados óptimos.
+
+```{r}
+#Se guarda el dataset trabajado
+write.csv(heart, "heartFinal.csv", row.names=FALSE)
+
+```
+
+
 # Resolución del problema, conclusiones
-- La variable edad es una variable influyente en la predicción de un diagnóstico de enfermedad cardíaca
-- 
+- La variable edad es una variable influyente en la predicción de un diagnóstico de enfermedad cardíaca.  
+- No se infieren diferencias significativas en la población sujeta a estudio medical: es decir, no se infiere que los hombres o las mujeres van más al médico en busca de un diagnóstico.  
+- Sí se infiere una diferencia signfiicativa poblacional en el diagnóstico de enfermedad cardíaca entre hombres y mujeres: parece haber una mayor proporción de mujeres afectada por esta dolencia.  
+- El modelo predictivo elegido (regresión logística) es un modelo aceptable pero probablemente pueda ser mejorado por otros (objeto para un potencial posterior estudio).
