@@ -13,7 +13,7 @@ Dataset utilizado: [Heart attack analysis & prediction dataset - Kaggle](https:/
 
 ## Autores
   * David Reyes López - [dreyeslop@uoc.edu](dreyeslop@uoc.edu)
-  * Juan Antoni Pasaret Moxo - [joanan@gmail.com](joanan@gmail.com)
+  * Juan Antoni Pasaret Moxo - [jpasaret@uoc.edu](jpasaret@uoc.edu)
 
 ## Descripción del repositorio
 Este repositorio forma parte de la Práctica 2 de la asignatura: "Tipologia y ciclo de vida de los datos".
