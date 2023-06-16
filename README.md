@@ -20,7 +20,7 @@ Este repositorio forma parte de la Práctica 2 de la asignatura: "Tipologia y ci
 
 Ficheros contenidos en el proyecto:
 
-  * `practica2.R`: Código R.
+  * `practica2.R`: En la carpeta "codigo". Se trata del código fuente en R.
   * `practica2.Rmd`: Archivo principal que incluye el contenido de practica2.R junto explicaciones generando el informe final.
   * `practica2.pdf`: Informe final en formato PDF.
   * `practica2.hmtl`: Informe final en formato HTML.
